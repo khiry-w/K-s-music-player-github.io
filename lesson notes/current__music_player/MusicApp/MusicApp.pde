@@ -1,4 +1,9 @@
 import ddf.minim.*;
+import ddf.minim.analysis.*;
+import ddf.minim.effects.*;
+import ddf.minim.signals.*;
+import ddf.minim.spi.*;
+import ddf.minim.ugens.*;
 
 Minim minim;
 AudioPlayer player;
@@ -6,194 +11,141 @@ PImage album;
 
 boolean isPlaying = false;
 boolean isMuted = false;
-float savedVolume = 1.0;
-boolean loopInfinite = false;  // loop mode flag
+float savedVolume = 0.0;
+boolean loopInfinite = false;
 
 String[] songs = {
-  "assets/audio/USO.mp3",
-  "assets/audio/OTC.mp3",
-  "assets/audio/U-CAN'T-SEE-ME.mp3"
+  "data/Get Busy [Official Music Video].mp3",
+  "data/Travis Scott & Kid Cudi - The Scotts Instrumental (Best Version).mp3",
+  "data/.mp3"
 };
 
 String[] albums = {
-  "assets/images/ME-JU.jpg",
-  "assets/images/1316.jpg",
-  "assets/images/JC.jpg"
+  "data/black-myth-wukong-wallpaper-engine-1.jpg",
+  "data/black-myth-wukong-wallpaper-engine-1.jpg",
+  "data/black-myth-wukong-wallpaper-engine-1.jpg",
 };
 
 String[] titles = {
-  "YEET music - Merhawi Haile",
-  "OTC Music - Merhawi Haile",
-  "The Time Is Now music - Merhawi"
+  "Yeat- Get busy",
+  "",
+  ""
 };
 
 int currentSong = 0;
 
 void setup() {
-  fullScreen();
+  size(800, 600); // OpenJDK-compatible size
   minim = new Minim(this);
-  loadSong(currentSong);
- 
+  loadSong(currentSong); // Auto-play first track
   textAlign(CENTER, CENTER);
-  textFont(createFont("MV Boli", 60));
-  fill(0, 0, 139);
+  textSize(24);
 }
 
 void draw() {
   background(255);
   float centerX = width / 2;
- 
-  noFill();
-  stroke(0);
-  strokeWeight(5);
-  rect(50, 50, width - 100, height - 100);
- 
+
+  // Title Bar
   fill(200);
-  rect(centerX - 300, 50, 600, 100);
-  fill(0, 0, 139);
-  text(titles[currentSong], centerX, 100);
- 
-  image(album, centerX - 250, 180);
- 
+  rect(centerX - 300, 50, 600, 50);
+  fill(0);
+  text(titles[currentSong], centerX, 75);
+
+  // Album Art
+  if (album != null) {
+    image(album, centerX - 150, 120, 300, 200);
+  } else {
+    fill(0);
+    text("No Album Art", centerX, 200);
+  }
+
+  // Draw interactive elements
   drawButtons(centerX);
   drawProgressBar(centerX);
   drawQuitButton();
 }
 
 void drawButtons(float centerX) {
-  float btnY = 550;
-  float btnSize = 100;
-  float totalButtonWidth = btnSize * 8;
-  float buttonX = centerX - totalButtonWidth / 2;
- 
-  for (int i = 0; i < 8; i++) {
-    fill(180);
-    rect(buttonX, btnY, btnSize, btnSize);
-    fill(0);
-    drawButtonIcon(i, buttonX, btnY);
-    buttonX += btnSize;
-  }
-}
+  float y = 350;
+  float size = 80;
+  float totalWidth = size * 5;
+  float x = centerX - totalWidth / 2;
 
-void drawButtonIcon(int index, float x, float y) {
-  switch (index) {
-    case 0: // Fast Backward
-      triangle(x + 40, y + 25, x + 40, y + 75, x + 10, y + 50);
-      triangle(x + 60, y + 25, x + 60, y + 75, x + 30, y + 50);
-      break;
-    case 1: // Play/Pause
-      if (isPlaying) {
-        rect(x + 25, y + 30, 20, 50);
-        rect(x + 55, y + 30, 20, 50);
-      } else {
-        triangle(x + 35, y + 30, x + 35, y + 70, x + 65, y + 50);
-      }
-      break;
-    case 2: // Stop
-      rect(x + 25, y + 30, 50, 50);
-      break;
-    case 3: // Fast Forward
-      triangle(x + 35, y + 25, x + 35, y + 75, x + 65, y + 50);
-      triangle(x + 55, y + 25, x + 55, y + 75, x + 85, y + 50);
-      break;
-    case 4: // Next
-      triangle(x + 35, y + 25, x + 35, y + 75, x + 65, y + 50);
-      rect(x + 70, y + 25, 10, 50);
-      break;
-    case 5: // Previous
-      triangle(x + 65, y + 25, x + 65, y + 75, x + 35, y + 50);
-      rect(x + 25, y + 25, 10, 50);
-      break;
-    case 6: // Mute/Unmute
-      if (isMuted) {
-        line(x + 30, y + 30, x + 70, y + 70);
-        line(x + 70, y + 30, x + 30, y + 70);
-      } else {
-        triangle(x + 40, y + 35, x + 40, y + 65, x + 60, y + 50);
-        rect(x + 60, y + 40, 10, 20);
-      }
-      break;
-    case 7: // Loop mode icon
-      if (loopInfinite) {
-        noFill();
-        stroke(0);
-        strokeWeight(3);
-        // Draw an infinity symbol as 2 connected loops
-        beginShape();
-        vertex(x + 30, y + 50);
-        bezierVertex(x + 30, y + 30, x + 50, y + 30, x + 50, y + 50);
-        bezierVertex(x + 50, y + 70, x + 70, y + 70, x + 70, y + 50);
-        bezierVertex(x + 70, y + 30, x + 50, y + 30, x + 50, y + 50);
-        bezierVertex(x + 50, y + 70, x + 30, y + 70, x + 30, y + 50);
-        endShape();
-      } else {
-        noFill();
-        stroke(0);
-        strokeWeight(3);
-        ellipse(x + 50, y + 50, 40, 40);
-        fill(0);
-        textSize(30);
-        text("1", x + 50, y + 55);
-      }
-      break;
+   String[] labels = {"PREV", "PLAY/PAUSE", "NEXT", "STOP", "QUIT"};
+
+  for (int i = 0; i < 5; i++) {
+    fill(180);
+    rect(x, y, size, size);
+    fill(0);
+    textSize(32);
+    text(labels[i], x + size / 2, y + size / 2 + 10);
+    x += size + 10;
   }
 }
 
 void drawProgressBar(float centerX) {
-  float barY = 700;
-  float barWidth = 100 * 15;
+  float y = 500;
+  float barWidth = width - 200;
   fill(220);
-  rect(centerX - barWidth / 2, barY, barWidth, 30);
- 
-  if (player.isPlaying()) {
+  rect(centerX - barWidth / 2, y, barWidth, 20);
+
+  if (player != null && player.isPlaying()) {
     float progress = map(player.position(), 0, player.length(), 0, barWidth);
     fill(0, 0, 139);
-    rect(centerX - barWidth / 2, barY, progress, 30);
+    rect(centerX - barWidth / 2, y, progress, 20);
   }
- 
-  int currentMillis = player.position();
-  int totalMillis = player.length();
-  String currentTime = nf(currentMillis / 60000, 2) + ":" + nf((currentMillis / 1000) % 60, 2);
-  String totalTime = nf(totalMillis / 60000, 2) + ":" + nf((totalMillis / 1000) % 60, 2);
- 
-  fill(0);
-  textSize(24);
-  text(currentTime + " / " + totalTime, centerX, barY + 40);
+
+  if (player != null) {
+    int pos = player.position();
+    int len = player.length();
+    String time = nf(pos / 60000, 2) + ":" + nf((pos / 1000) % 60, 2);
+    String total = nf(len / 60000, 2) + ":" + nf((len / 1000) % 60, 2);
+
+    fill(0);
+    textSize(20);
+    text(time + " / " + total, centerX, y + 40);
+  }
 }
 
 void drawQuitButton() {
+  float x = width - 70;
+  float y = 30;
   fill(200);
-  rect(width - 90, 30, 50, 50);
+  rect(x, y, 40, 40);
   fill(255, 0, 0);
-  textSize(30);
-  text("X", width - 60, 55);
+  textSize(20);
+  text("QUIT", x + 20, y + 25);
 }
 
 void mousePressed() {
   float centerX = width / 2;
-  float btnY = 550;
-  float btnSize = 100;
-  float totalButtonWidth = btnSize * 8;
-  float buttonX = centerX - totalButtonWidth / 2;
- 
-  for (int i = 0; i < 8; i++) {
-    if (mouseX > buttonX && mouseX < buttonX + btnSize && mouseY > btnY && mouseY < btnY + btnSize) {
+  float y = 350;
+  float size = 80;
+  float totalWidth = size * 5;
+  float x = centerX - totalWidth / 2;
+
+  for (int i = 0; i < 5; i++) {
+    if (mouseX > x && mouseX < x + size && mouseY > y && mouseY < y + size) {
       handleButtonPress(i);
     }
-    buttonX += btnSize;
+    x += size + 10;
   }
- 
-  if (mouseX > width - 90 && mouseX < width - 40 && mouseY > 30 && mouseY < 80) {
+
+  if (mouseX > width - 70 && mouseX < width - 30 && mouseY > 30 && mouseY < 70) {
     exit();
   }
 }
 
-void handleButtonPress(int index) {
-  switch (index) {
-    case 0:
-      player.cue(max(player.position() - 5000, 0));
+void handleButtonPress(int i) {
+  if (player == null) return;
+
+  switch (i) {
+    case 0: // Previous Track
+      currentSong = (currentSong - 1 + songs.length) % songs.length;
+      loadSong(currentSong);
       break;
-    case 1:
+    case 1: // Play/Pause
       if (isPlaying) {
         player.pause();
         isPlaying = false;
@@ -202,51 +154,37 @@ void handleButtonPress(int index) {
         isPlaying = true;
       }
       break;
-    case 2:
-      player.pause();
-      player.rewind();
-      isPlaying = false;
-      break;
-    case 3:
-      player.cue(min(player.position() + 5000, player.length()));
-      break;
-    case 4:
+    case 2: // Next Track
       currentSong = (currentSong + 1) % songs.length;
       loadSong(currentSong);
       break;
-    case 5:
-      currentSong = (currentSong - 1 + songs.length) % songs.length;
-      loadSong(currentSong);
+    case 3: // Mute/Unmute
+      isMuted = !isMuted;
+      player.setGain(isMuted ? -80 : savedVolume);
       break;
-    case 6:
-      if (isMuted) {
-        player.setGain(savedVolume);
-        isMuted = false;
-      } else {
-        savedVolume = player.getGain();
-        player.setGain(-80);
-        isMuted = true;
-      }
-      break;
-    case 7:
-      loopInfinite = !loopInfinite;
-      if (loopInfinite) {
-        player.loop();
-      } else {
-        player.pause();
-        player.play();
-        player.setLoopPoints(0, player.length());
-      }
+    case 4: // Quit
+      exit();
       break;
   }
 }
 
-void loadSong(int index) {
+void loadSong(int i) {
   if (player != null) {
     player.close();
   }
-  player = minim.loadFile(songs[index]);
-  album = loadImage(albums[index]);
-  album.resize(500, 300);
-  isPlaying = false;
+ 
+  player = minim.loadFile(songs[i]);
+  album = loadImage(albums[i]);
+ 
+  if (album != null) {
+    album.resize(300, 200);
+  }
+
+  if (player != null) {
+    player.play();
+    isPlaying = true;
+    if (isMuted) player.setGain(-80);
+  } else {
+    println("Error loading song: " + songs[i]);
+  }
 }
